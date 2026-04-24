@@ -12,8 +12,8 @@ data/raw/*.csv
 data/processed/*.csv
 models_saved/*.pkl
 
-# Reports
-reports/figures/*.png
+# Reports (Commented out to allow pushing generated charts)
+# reports/figures/*.png
 
 # OS
 .DS_Store
