@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ipynb_checkpoints/
+venv/
+.venv/
+
+# Project Data (Large files)
+data/raw/*.csv
+data/processed/*.csv
+models_saved/*.pkl
+
+# Reports
+reports/figures/*.png
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment
+.env
