@@ -1,27 +1,170 @@
 # Phishing URL Detection – ML Project
 **UEL EUE | Level 4 Cybersecurity | 48-Feature Kaggle Dataset**
 
+**Status: ✅ Production-Ready**
+
 ---
 
-## Quick Start
+## Quick Start (Production)
 
-```powershell
-# ⚠️  Windows PowerShell: use "python -m pip" instead of bare "pip"
+```bash
+# 1. Clone and setup
+git clone <repo>
+cd phishing-url-detection
 
-# 1. Install dependencies
-python -m pip install -r requirements.txt
+# 2. Install dependencies
+pip install -r requirements.txt
 
-# 2. Place your dataset
-#    Download from Kaggle → data/raw/phishing_dataset.csv
+# 3. Configure (optional - see .env.example)
+cp .env.example .env
 
-# 3. Run just EDA (generates 8 figures)
-python main.py --eda-only --data data/raw/phishing_dataset.csv
+# 4. Download dataset & train models
+python main.py
 
-# 4. Run full pipeline (EDA + all 5 models)
-python main.py --data data/raw/phishing_dataset.csv
+# 5. Start REST API
+python app.py
 
-# 5. Run unit tests
+# 6. Test the API
+curl http://localhost:5000/health
+```
+
+---
+
+## Docker Deployment (Recommended for Production)
+
+```bash
+# Build and run with Docker Compose
+docker-compose up --build
+
+# API will be available at: http://localhost:5000
+```
+
+### Docker Environment Variables
+
+See `.env.example` for all configuration options. Key variables:
+
+```bash
+ENV=production              # Environment: production, development
+AUTO_DOWNLOAD_DATASET=true  # Auto-download from Kaggle
+AUTO_TRAIN_MODELS=false     # Set to true to retrain on startup
+LOG_LEVEL=INFO              # Logging level: DEBUG, INFO, WARNING, ERROR
+```
+
+---
+
+## API Endpoints
+
+### Health Check
+```bash
+GET /health
+# Returns: {"status": "ok", "models_loaded": 5, ...}
+```
+
+### List Available Models
+```bash
+GET /models
+# Returns: {"models": ["XGBoost", "LogisticRegression", ...], "count": 5}
+```
+
+### Single Prediction
+```bash
+POST /predict
+Content-Type: application/json
+
+{
+  "features": [0.5, 0.3, 0.1, ...],  # Array of 48 features
+  "model": "XGBoost"                  # Optional model selection
+}
+
+# Response:
+{
+  "prediction": 1,
+  "prediction_label": "Phishing",
+  "confidence": 0.92,
+  "model": "XGBoost",
+  "timestamp": "2026-04-24T17:59:00"
+}
+```
+
+### Batch Prediction
+```bash
+POST /predict-batch
+Content-Type: application/json
+
+{
+  "features": [[0.5, ...], [0.3, ...]],
+  "model": "XGBoost"
+}
+
+# Response: Array of predictions
+```
+
+---
+
+## CLI Usage
+
+```bash
+# Run full pipeline (auto-downloads dataset + trains models)
+python main.py
+
+# Run EDA only
+python main.py --eda-only
+
+# Skip EDA, train models only
+python main.py --skip-eda
+
+# Specify custom dataset location
+python main.py --data data/raw/custom_phishing_dataset.csv
+
+# Run tests
 python -m pytest tests/ -v
+```
+
+### Environment Variables for CLI
+
+```bash
+# Auto-download dataset (default: true)
+AUTO_DOWNLOAD_DATASET=false python main.py
+
+# Skip EDA step
+SKIP_EDA=true python main.py
+
+# Change log level
+LOG_LEVEL=DEBUG python main.py
+```
+
+---
+
+## Dataset Management
+
+### Auto-Download (Requires Kaggle API)
+
+The project automatically downloads the Kaggle dataset on first run:
+
+```bash
+python main.py  # Automatically downloads if dataset missing
+```
+
+**Prerequisites:**
+- Kaggle account (free)
+- Kaggle API credentials (~/.kaggle/kaggle.json)
+- Internet connection
+
+See: https://www.kaggle.com/help/api
+
+### Manual Download
+
+If auto-download fails, download manually:
+
+```bash
+python dataset_manager.py
+```
+
+Or configure your Kaggle credentials:
+```bash
+export KAGGLE_USERNAME=your_username
+export KAGGLE_KEY=your_api_key
+python dataset_manager.py
 ```
 
 ---
@@ -31,7 +174,7 @@ python -m pytest tests/ -v
 ```
 project/
 ├── data/
-│   ├── raw/                    ← Place Kaggle CSV here
+│   ├── raw/                    ← Kaggle CSV (auto-downloaded)
 │   └── processed/              ← Auto-generated cleaned splits
 ├── src/
 │   ├── preprocessing/
@@ -40,12 +183,18 @@ project/
 │   └── models/
 │       └── trainer.py          ← 5-model pipeline + evaluation
 ├── reports/
-│   └── figures/                ← All 8 EDA plots + confusion matrices
+│   └── figures/                ← 8 EDA plots + confusion matrices
 ├── models_saved/               ← .pkl files for each model
 ├── tests/
-│   └── test_pipeline.py        ← 9 unit tests (all passing)
+│   └── test_pipeline.py        ← 9 unit tests
+├── app.py                      ← Flask REST API
+├── config.py                   ← Production configuration
+├── dataset_manager.py          ← Auto-download logic
 ├── eda.py                      ← Standalone EDA script
 ├── main.py                     ← Master pipeline entry-point
+├── Dockerfile                  ← Docker container
+├── docker-compose.yml          ← Docker orchestration
+├── .env.example                ← Environment template
 └── requirements.txt
 ```
 
@@ -84,8 +233,33 @@ project/
 
 The Kaggle Phishing URL dataset should have:
 - **48 numeric feature columns** (pre-extracted URL features)
-- **1 label column** named `Result` with values `{-1, 1}`
-  - `1`  = Phishing
-  - `-1` = Legitimate
+- **1 label column** named `CLASS_LABEL` with values `{0, 1}`
+  - `0` = Legitimate
+  - `1` = Phishing
 
-Labels are auto-remapped to `{0, 1}` during preprocessing.
+---
+
+## Production Features
+
+✅ **Auto-Dataset Download** - Downloads from Kaggle on first run  
+✅ **REST API** - Serve predictions via HTTP endpoints  
+✅ **Docker Ready** - One-command deployment  
+✅ **Configuration Management** - Environment-based settings  
+✅ **Health Checks** - Readiness and liveness probes  
+✅ **Structured Logging** - Production-grade logging  
+✅ **Batch Predictions** - Process multiple URLs at once  
+✅ **Error Handling** - Comprehensive exception handling  
+✅ **Model Serving** - Load and manage multiple trained models  
+✅ **Testing** - 9 unit tests for core functionality
+
+---
+
+## Contributing
+
+See CONTRIBUTING.md for guidelines.
+
+---
+
+## License
+
+MIT License - See LICENSE file for details.

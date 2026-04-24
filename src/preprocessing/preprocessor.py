@@ -133,6 +133,21 @@ class PhishingPreprocessor:
             )
         return y.astype(int)
 
+    def save(self, filepath: str) -> None:
+        """Save the fitted preprocessor to a pickle file."""
+        import joblib
+        import os
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        joblib.dump(self, filepath)
+        logger.info("Saved preprocessor to %s", filepath)
+
+    @classmethod
+    def load(cls, filepath: str) -> "PhishingPreprocessor":
+        """Load a fitted preprocessor from a pickle file."""
+        import joblib
+        logger.info("Loading preprocessor from %s", filepath)
+        return joblib.load(filepath)
+
 
 def save_processed_splits(
     splits: Tuple,

@@ -23,6 +23,8 @@ import time
 from src.preprocessing.data_loader import load_dataset, split_data, get_feature_names
 from src.preprocessing.preprocessor import PhishingPreprocessor, save_processed_splits
 from src.models.trainer import run_all_models
+from dataset_manager import DatasetManager
+from config import AUTO_DOWNLOAD_DATASET, AUTO_TRAIN_MODELS
 
 # ---------------------------------------------------------------------------
 # Logging setup at INFO level for the full pipeline
@@ -90,6 +92,19 @@ def run_pipeline(args: argparse.Namespace) -> None:
     t_start = time.perf_counter()
 
     # -----------------------------------------------------------------------
+    # STEP 0 – Ensure dataset is available (auto-download if needed)
+    # -----------------------------------------------------------------------
+    logger.info("STEP 0/4 – Ensuring dataset availability …")
+    try:
+        dm = DatasetManager(auto_download=AUTO_DOWNLOAD_DATASET)
+        dataset_path = dm.ensure_dataset()
+        args.data = str(dataset_path)
+        logger.info(f"Dataset ready: {dataset_path}")
+    except Exception as exc:
+        logger.error(f"Dataset unavailable: {exc}")
+        sys.exit(1)
+
+    # -----------------------------------------------------------------------
     # STEP 1 – Load dataset
     # -----------------------------------------------------------------------
     logger.info("STEP 1/4 – Loading dataset …")
@@ -137,6 +152,9 @@ def run_pipeline(args: argparse.Namespace) -> None:
         (X_train, X_val, X_test, y_train, y_val, y_test),
         feature_names,
     )
+    
+    import os
+    preprocessor.save(os.path.join("models_saved", "preprocessor.pkl"))
 
     # -----------------------------------------------------------------------
     # STEP 4 – Model Training & Evaluation

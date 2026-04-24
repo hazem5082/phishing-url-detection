@@ -100,6 +100,9 @@ def load_dataset(filepath: str) -> pd.DataFrame:
 
     logger.info("Loading dataset from: %s", filepath)
     df = pd.read_csv(filepath)
+    
+    if "id" in df.columns:
+        df = df.drop(columns=["id"])
 
     # Basic schema validation – check the correct label column name
     if TARGET_COLUMN not in df.columns:
