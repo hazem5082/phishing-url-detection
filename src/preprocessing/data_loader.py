@@ -100,7 +100,8 @@ def load_dataset(filepath: str) -> pd.DataFrame:
 
     logger.info("Loading dataset from: %s", filepath)
     df = pd.read_csv(filepath)
-    
+
+    # Drop 'id' column if it exists since it's not a predictive feature
     if "id" in df.columns:
         df = df.drop(columns=["id"])
 

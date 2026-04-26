@@ -104,6 +104,23 @@ class PhishingPreprocessor:
         X = self._scaler.transform(X)
         return X
 
+    def save(self, output_dir: str = "models_saved") -> None:
+        """Save the fitted preprocessor to disk."""
+        import joblib
+        os.makedirs(output_dir, exist_ok=True)
+        path = os.path.join(output_dir, "preprocessor.pkl")
+        joblib.dump(self, path)
+        logger.info("Saved preprocessor to %s", path)
+
+    @classmethod
+    def load(cls, filepath: str = "models_saved/preprocessor.pkl") -> "PhishingPreprocessor":
+        """Load a fitted preprocessor from disk."""
+        import joblib
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"Preprocessor not found at {filepath}")
+        logger.info("Loading preprocessor from %s", filepath)
+        return joblib.load(filepath)
+
     def encode_labels(self, y: np.ndarray) -> np.ndarray:
         """
         Validate and return the label array.
@@ -132,21 +149,6 @@ class PhishingPreprocessor:
                 unexpected,
             )
         return y.astype(int)
-
-    def save(self, filepath: str) -> None:
-        """Save the fitted preprocessor to a pickle file."""
-        import joblib
-        import os
-        os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        joblib.dump(self, filepath)
-        logger.info("Saved preprocessor to %s", filepath)
-
-    @classmethod
-    def load(cls, filepath: str) -> "PhishingPreprocessor":
-        """Load a fitted preprocessor from a pickle file."""
-        import joblib
-        logger.info("Loading preprocessor from %s", filepath)
-        return joblib.load(filepath)
 
 
 def save_processed_splits(

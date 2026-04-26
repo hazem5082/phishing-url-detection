@@ -22,7 +22,7 @@ import time
 
 from src.preprocessing.data_loader import load_dataset, split_data, get_feature_names
 from src.preprocessing.preprocessor import PhishingPreprocessor, save_processed_splits
-from src.models.trainer import run_all_models
+from src.model_training.trainer import run_all_models
 from dataset_manager import DatasetManager
 from config import AUTO_DOWNLOAD_DATASET, AUTO_TRAIN_MODELS
 
@@ -147,14 +147,14 @@ def run_pipeline(args: argparse.Namespace) -> None:
     X_val   = preprocessor.transform(X_val_raw)
     X_test  = preprocessor.transform(X_test_raw)
 
+    # Save preprocessor
+    preprocessor.save("models_saved")
+
     # Persist clean CSVs for future notebook exploration
     save_processed_splits(
         (X_train, X_val, X_test, y_train, y_val, y_test),
         feature_names,
     )
-    
-    import os
-    preprocessor.save(os.path.join("models_saved", "preprocessor.pkl"))
 
     # -----------------------------------------------------------------------
     # STEP 4 – Model Training & Evaluation

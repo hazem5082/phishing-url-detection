@@ -103,6 +103,7 @@ Content-Type: application/json
 
 ## CLI Usage
 
+### Main Pipeline
 ```bash
 # Run full pipeline (auto-downloads dataset + trains models)
 python main.py
@@ -118,6 +119,39 @@ python main.py --data data/raw/custom_phishing_dataset.csv
 
 # Run tests
 python -m pytest tests/ -v
+```
+
+### Offline URL Prediction
+```bash
+# Single URL prediction
+python predict_url.py "https://www.example.com"
+
+# Multiple URLs
+python predict_url.py "https://example.com" "https://google.com"
+
+# Interactive mode
+python predict_url.py --interactive
+
+# List available models
+python predict_url.py --list-models
+
+# Use specific model
+python predict_url.py --model random_forest "https://example.com"
+```
+
+### Production Startup
+```bash
+# Full startup (dataset + training + API)
+python startup.py
+
+# API only (skip dataset and training)
+python startup.py --api-only
+
+# Skip training only
+python startup.py --skip-training
+
+# Custom port
+python startup.py --port 8080
 ```
 
 ### Environment Variables for CLI
@@ -173,28 +207,51 @@ python dataset_manager.py
 
 ```
 project/
-├── data/
-│   ├── raw/                    ← Kaggle CSV (auto-downloaded)
-│   └── processed/              ← Auto-generated cleaned splits
-├── src/
-│   ├── preprocessing/
-│   │   ├── data_loader.py      ← Load dataset + 70/15/15 split
-│   │   └── preprocessor.py     ← Impute, scale, encode labels
-│   └── models/
-│       └── trainer.py          ← 5-model pipeline + evaluation
-├── reports/
-│   └── figures/                ← 8 EDA plots + confusion matrices
-├── models_saved/               ← .pkl files for each model
-├── tests/
-│   └── test_pipeline.py        ← 9 unit tests
-├── app.py                      ← Flask REST API
-├── config.py                   ← Production configuration
-├── dataset_manager.py          ← Auto-download logic
-├── eda.py                      ← Standalone EDA script
-├── main.py                     ← Master pipeline entry-point
-├── Dockerfile                  ← Docker container
-├── docker-compose.yml          ← Docker orchestration
-├── .env.example                ← Environment template
+├── config/                     # Configuration management
+│   ├── __init__.py
+│   ├── paths.py               # Directory and file paths
+│   ├── model_config.py        # Model-related settings
+│   ├── api_config.py          # API server settings
+│   ├── logging_config.py      # Logging configuration
+│   ├── runtime_config.py      # Runtime flags
+│   └── environment.py         # Environment-specific settings
+├── src/                        # Source code modules
+│   ├── preprocessing/          # Data preprocessing
+│   │   ├── data_loader.py     # Dataset loading and splitting
+│   │   └── preprocessor.py    # Feature scaling and imputation
+│   ├── feature_engineering/    # Feature extraction
+│   │   └── feature_extractor.py  # URL to feature conversion
+│   └── model_training/        # Model training pipeline
+│       └── trainer.py         # Multi-model training with hyperparameter tuning
+├── notebooks/                  # Jupyter notebooks
+│   ├── 01_exploratory_data_analysis.ipynb
+│   ├── 02_model_training.ipynb
+│   └── 03_results_analysis.ipynb
+├── tests/                      # Unit tests
+│   ├── test_pipeline.py
+│   └── test_api.py
+├── doc/                        # Documentation
+│   ├── architecture.md         # System architecture
+│   ├── feature_engineering.md  # Feature documentation
+│   └── user_guide.md          # User guide
+├── errors/                     # Error logs and fixes
+│   ├── error_log.md
+│   └── README.md
+├── data/                       # Data storage
+│   ├── raw/                   # Raw dataset
+│   └── processed/             # Processed splits
+├── models_saved/               # Trained models (.pkl files)
+├── reports/                    # Reports and visualizations
+│   └── figures/               # EDA plots and confusion matrices
+├── app.py                      # Flask REST API
+├── main.py                     # Main pipeline entry point
+├── predict_url.py              # Offline URL prediction CLI
+├── dataset_manager.py          # Dataset download and management
+├── eda.py                      # Standalone EDA script
+├── startup.py                  # Production startup script
+├── Dockerfile                  # Docker container
+├── docker-compose.yml          # Docker orchestration
+├── .env.example                # Environment template
 └── requirements.txt
 ```
 
@@ -244,13 +301,16 @@ The Kaggle Phishing URL dataset should have:
 ✅ **Auto-Dataset Download** - Downloads from Kaggle on first run  
 ✅ **REST API** - Serve predictions via HTTP endpoints  
 ✅ **Docker Ready** - One-command deployment  
-✅ **Configuration Management** - Environment-based settings  
+✅ **Configuration Management** - Environment-based settings (split into modular config files)  
 ✅ **Health Checks** - Readiness and liveness probes  
 ✅ **Structured Logging** - Production-grade logging  
 ✅ **Batch Predictions** - Process multiple URLs at once  
 ✅ **Error Handling** - Comprehensive exception handling  
 ✅ **Model Serving** - Load and manage multiple trained models  
-✅ **Testing** - 9 unit tests for core functionality
+✅ **Testing** - Unit tests for core functionality  
+✅ **Notebooks** - Jupyter notebooks for EDA, training, and analysis  
+✅ **Documentation** - Comprehensive architecture, feature engineering, and user guide docs  
+✅ **Error Tracking** - Centralized error log with documented fixes
 
 ---
 

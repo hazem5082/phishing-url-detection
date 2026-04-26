@@ -22,7 +22,7 @@ from typing import List, Dict, Any
 from pathlib import Path
 
 # Import our modules
-from feature_extraction import extract_features_from_url
+from src.feature_engineering.feature_extractor import extract_features_from_url
 from src.preprocessing.preprocessor import PhishingPreprocessor
 
 # Setup logging
@@ -107,13 +107,8 @@ def init_preprocessor():
         return PREPROCESSOR
     
     try:
-        preprocessor_path = MODELS_DIR / "preprocessor.pkl"
-        if preprocessor_path.exists():
-            PREPROCESSOR = PhishingPreprocessor.load(str(preprocessor_path))
-            logger.info("Preprocessor loaded from disk")
-        else:
-            logger.warning("preprocessor.pkl not found! Features will not be scaled. Re-run main.py to save it.")
-            PREPROCESSOR = PhishingPreprocessor()
+        PREPROCESSOR = PhishingPreprocessor.load(str(MODELS_DIR / "preprocessor.pkl"))
+        logger.info("Preprocessor initialized")
         return PREPROCESSOR
     except Exception as e:
         logger.error(f"Failed to initialize preprocessor: {e}")
@@ -163,18 +158,25 @@ def predict_url(url: str, model_name: str = DEFAULT_MODEL) -> Dict[str, Any]:
                 "url": url
             }
         
-        # Make prediction
-        prediction = model.predict(features_array)[0]
-        
         # Get confidence/probability if available
         confidence = None
+        phishing_prob = None
+        
         if hasattr(model, "predict_proba"):
             probs = model.predict_proba(features_array)[0]
-            confidence = float(probs[1])  # Probability of phishing
+            phishing_prob = float(probs[1])  # Probability of phishing
         elif hasattr(model, "decision_function"):
             # For models without predict_proba
             score = model.decision_function(features_array)[0]
-            confidence = float(1 / (1 + np.exp(-score)))  # Sigmoid
+            phishing_prob = float(1 / (1 + np.exp(-score)))  # Sigmoid
+            
+        if phishing_prob is not None:
+            # Make the decision making of phishing or legit depending on confidence level
+            prediction = 1 if phishing_prob >= 0.5 else 0
+            # Confidence is how sure it is about its chosen prediction
+            confidence = phishing_prob if prediction == 1 else (1.0 - phishing_prob)
+        else:
+            prediction = model.predict(features_array)[0]
         
         return {
             "url": url,
@@ -224,14 +226,18 @@ def predict_batch(urls: List[str], model_name: str = DEFAULT_MODEL) -> List[Dict
         if model is None:
             return [{"error": f"Model '{model_name}' not found"}]
         
-        # Make predictions
-        predictions = model.predict(features_array)
+        # Make predictions and calculate confidences
+        predictions = model.predict(features_array).tolist()
+        confidences = [None] * len(predictions)
         
         # Get probabilities if available
-        probabilities = None
         if hasattr(model, "predict_proba"):
             probs = model.predict_proba(features_array)
-            probabilities = probs[:, 1].tolist()
+            for i in range(len(predictions)):
+                phishing_prob = float(probs[i, 1])
+                # Make the decision making depending on confidence level
+                predictions[i] = 1 if phishing_prob >= 0.5 else 0
+                confidences[i] = phishing_prob if predictions[i] == 1 else (1.0 - phishing_prob)
         
         results = []
         for i, pred in enumerate(predictions):
@@ -240,7 +246,7 @@ def predict_batch(urls: List[str], model_name: str = DEFAULT_MODEL) -> List[Dict
                 "url": urls[i],
                 "prediction": int(pred),
                 "prediction_label": "Phishing" if pred == 1 else "Legitimate",
-                "confidence": probabilities[i] if probabilities else None,
+                "confidence": confidences[i],
                 "model": model_name,
             })
         

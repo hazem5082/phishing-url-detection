@@ -84,13 +84,8 @@ def load_preprocessor():
     """Initialize preprocessor for data transformation."""
     global PREPROCESSOR
     try:
-        preprocessor_path = Path(MODELS_DIR) / "preprocessor.pkl"
-        if preprocessor_path.exists():
-            PREPROCESSOR = PhishingPreprocessor.load(str(preprocessor_path))
-            logger.info("✓ Preprocessor loaded from disk")
-        else:
-            logger.warning("⚠ preprocessor.pkl not found! Features will not be scaled. Re-run main.py to save it.")
-            PREPROCESSOR = PhishingPreprocessor()
+        PREPROCESSOR = PhishingPreprocessor()
+        logger.info("✓ Preprocessor initialized")
         return PREPROCESSOR
     except Exception as exc:
         logger.error(f"✗ Failed to initialize preprocessor: {exc}")
